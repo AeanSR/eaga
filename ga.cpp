@@ -1,39 +1,50 @@
 #include "aplga.h"
 
-struct lelem_t{
-    apl_t* apl;
-    float dps;
-    int complexity;
-} list[270];
 
-float eval(int idx){
+lelem_t list[270];
+
+void eval(int idx){
+	if (list[idx].iterations == 0){
+		if (!hash_apl(list[idx])){
+			list[idx].dps = -1;
+			return;
+		}
+	}
     std::string str;
     list[idx].apl->print(str);
-    __m128i lh;
-    uint32_t sh = strhash(str.c_str(), lh);
+
     float dps;
-    if (checktt(lh, sh)) return .0;
-    dps = ocl().run(str);
+	float error;
+    irecore_run(str, dps, error);
     if (dps < .0) abort();
-    recordtt(lh, sh);
-    return dps;
+	list[idx].dps = (list[idx].dps * list[idx].iterations + dps * 10000) / (list[idx].iterations + 10000);
+	error = error * error * 10000 * 10000;
+	list[idx].dpse = list[idx].dpse * list[idx].dpse * list[idx].iterations * list[idx].iterations;
+	list[idx].dpse += error;
+	list[idx].dpse /= list[idx].iterations + 10000;
+	list[idx].dpse /= list[idx].iterations + 10000;
+	list[idx].dpse = sqrt(list[idx].dpse);
+	list[idx].iterations += 10000;
+
+	list[idx].fitness = list[idx].dps / (1.0 + exp(2 * (list[idx].apl->complexity() - 14)));
+	list[idx].fitness_error = list[idx].dpse / (1.0 + exp(2 * (list[idx].apl->complexity() - 14)));
 }
 
-void dpssort(int first, int last){
+void fitness_sort(int first, int last){
     if (last - first > 1){
         int i = first + 1;
         int j = last;
-        float key = list[first].dps;
+        float key = list[first].fitness;
         while (1){
-            while (key > list[j].dps)
+            while (key > list[j].fitness)
                 j--;
-            while (key < list[i].dps && i<j)
+            while (key < list[i].fitness && i<j)
                 i++;
             if (i >= j) break;
             auto tmpelem = list[i];
             list[i] = list[j];
             list[j] = tmpelem;
-            if (list[i].dps == key)
+            if (list[i].fitness == key)
                 j--;
             else
                 i++;
@@ -41,52 +52,17 @@ void dpssort(int first, int last){
         auto tmpelem = list[j];
         list[j] = list[first];
         list[first] = tmpelem;
-        if (first < i - 1) dpssort(first, i - 1);
-        if (j + 1 < last) dpssort(j + 1, last);
+        if (first < i - 1) fitness_sort(first, i - 1);
+        if (j + 1 < last) fitness_sort(j + 1, last);
     }
     else{
-        if (list[first].dps < list[last].dps){
+        if (list[first].fitness < list[last].fitness){
             auto tmpelem = list[first];
             list[first] = list[last];
             list[last] = tmpelem;
         }
     }
 }
-
-void complexitysort(int first, int last){
-    if (last - first > 1){
-        int i = first + 1;
-        int j = last;
-        int key = list[first].complexity;
-        while (1){
-            while (key < list[j].complexity)
-                j--;
-            while (key > list[i].complexity && i<j)
-                i++;
-            if (i >= j) break;
-            auto tmpelem = list[i];
-            list[i] = list[j];
-            list[j] = tmpelem;
-            if (list[i].complexity == key)
-                j--;
-            else
-                i++;
-        }
-        auto tmpelem = list[j];
-        list[j] = list[first];
-        list[first] = tmpelem;
-        if (first < i - 1) complexitysort(first, i - 1);
-        if (j + 1 < last) complexitysort(j + 1, last);
-    }
-    else{
-        if (list[first].complexity > list[last].complexity){
-            auto tmpelem = list[first];
-            list[first] = list[last];
-            list[last] = tmpelem;
-        }
-    }
-}
-
 
 
 int main(){
@@ -96,13 +72,15 @@ int main(){
     FILE* fdata = fopen("data.txt", "wb");
     FILE* fbest = fopen("best.txt", "wb");
     
+	irecore_initialize();
+
     /* init genetic. */
     for (i = 0; i < 200; i++){
         list[i].apl = new apl_t;
-        list[i].dps = eval(i);
+        eval(i);
         while (list[i].dps <= .0){
             list[i].apl->mutation();
-            list[i].dps = eval(i);
+            eval(i);
         }
     }
     while (1){
@@ -140,22 +118,36 @@ int main(){
         }
         /* evaluation */
         for (i = 200; i < 270; i++){
-            list[i].dps = eval(i);
-            list[i].complexity = list[i].apl->complexity();
+            eval(i);
         }
         /* sort */
-        dpssort(0, 269);
-        int j = 0;
-        for (i = 1; i < 270; i++){
-            if (list[i].dps != list[j].dps){
-                if (i - j > 1) complexitysort(j, i - 1);
-                j = i;
-            }
-        }
-        if (j < 200) complexitysort(j, 269);
+        fitness_sort(0, 269);
+        int fine = 0;
+		while (!fine){
+			fine = 1;
+			for (i = 0; i < 200; i++){
+				for (int j = 200; j < 270; j++){
+					if (1.47*(list[i].fitness_error + list[j].fitness_error) > abs(list[i].fitness - list[j].fitness)){
+						if (list[i].dpse > 3){
+							eval(i);
+							fine = 0;
+						}
+						if (list[j].dpse > 3){
+							eval(j);
+							fine = 0;
+						}
+					}
+				}
+			}
+			fitness_sort(0,269);
+		}
         /* select */
         for (i = 200; i < 270; i++){
             list[i].dps = .0;
+			list[i].dpse = .0;
+			list[i].fitness = .0;
+			list[i].fitness_error = .0;
+			list[i].iterations = 0;
             delete list[i].apl;
             list[i].apl = nullptr;
         }

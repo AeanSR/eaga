@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdarg>
-#include "VersionNo.h"
+//#include "VersionNo.h"
 
 #ifdef __APPLE__
 #include <OpenCL/opencl.h>
@@ -60,7 +60,7 @@ private:
 public:
 	int opencl_device_id;
     int init();
-    float run(std::string& apl_cstr, std::string& predef);
+    float run(std::string& apl_cstr, std::string& predef, float* result);
     int free();
     ocl_t() : initialized(0){
     } 
@@ -71,4 +71,8 @@ public:
 
 ocl_t& ocl();
 
-extern "C" void host_kernel_entry();
+//extern "C" void host_kernel_entry();
+
+void irecore_initialize();
+void irecore_hash(std::string& apl, float* result);
+void irecore_run(std::string& apl, float& dps, float& error);

@@ -152,7 +152,7 @@ int ocl_t::init()
 	return 0;
 }
 
-float ocl_t::run(std::string& apl_cstr, std::string& predef){
+float ocl_t::run(std::string& apl_cstr, std::string& predef, float* result){
 	if (!initialized) init();
 	if (list_available_devices) return -1.0f;
 
@@ -247,6 +247,7 @@ float ocl_t::run(std::string& apl_cstr, std::string& predef){
 				ret = -1.0;
 			}
 			else{
+				if (result) memcpy(result, res, iterations * sizeof(float));
 				ret = prefix_mean(res, iterations);
 				dev = prefix_stddev(res, iterations, ret);
 				std::cout << "       \r";

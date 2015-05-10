@@ -13,11 +13,11 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="源文件\IreCore">
+      <UniqueIdentifier>{4f4f3aff-be53-4430-8f6f-a9bcc2d5ba7f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ocli.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="cond.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -33,9 +33,18 @@
     <ClCompile Include="ga.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="irecore.cpp">
+      <Filter>源文件\IreCore</Filter>
+    </ClCompile>
+    <ClCompile Include="ocldriver.cpp">
+      <Filter>源文件\IreCore</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="aplga.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="irecore.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

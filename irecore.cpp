@@ -119,13 +119,14 @@ void err(const char* format, ...){
 void set_default_parameters(){
 	developer_debug = 0;
 	list_available_devices = 0;
+	ocl().opencl_device_id = 1;
 	stat = {
 		"",
 		0,
 	};
 	stat_not_pushed = 1;
 	raidbuff = {
-		0
+		1,1,1,1,1,1,1,1,1,1,1,1,1
 	};
 	raidbuff.vers = 1;
 	seed = 0;
@@ -133,40 +134,42 @@ void set_default_parameters(){
 	rng_engine = 32;
 	apl = "";
 	default_actions=0;
-	iterations = 50000;
+	iterations = 10000;
 	vary_combat_length = 20.0f;
 	max_length = 450.0f;
 	initial_health_percentage = 100.0f;
 	death_pct = 0.0f;
 	power_max = 100.0f;
-	plate_specialization = 0;
+	plate_specialization = 1;
 	single_minded = 0;
 	race = 0;
-	talent = 0;
-	mh_speed = 1.5f;
-	oh_speed = 1.5f;
-	mh_high = 0;
-	oh_high = 0;
-	mh_low = 0;
-	oh_low = 0;
-	mh_type = 2;
-	oh_type = 2;
+	talent = 1321321;
+	mh_speed = 3.6f;
+	oh_speed = 3.6f;
+	mh_high = 2490;
+	oh_high = 2490;
+	mh_low = 1659;
+	oh_low = 1659;
+	mh_type = 0;
+	oh_type = 0;
 
 	archmages_incandescence = 0;
-	archmages_greater_incandescence = 0;
-	t17_2pc = 0;
-	t17_4pc = 0;
+	archmages_greater_incandescence = 1;
+	t17_2pc = 1;
+	t17_4pc = 1;
 	t18_2pc = 0;
 	t18_4pc = 0;
-	thunderlord_mh = 0;
-	thunderlord_oh = 0;
+	thunderlord_mh = 1;
+	thunderlord_oh = 1;
 	bleeding_hollow_mh = 0;
 	bleeding_hollow_oh = 0;
 	shattered_hand_mh = 0;
 	shattered_hand_oh = 0;
 
-	trinket1_name = "none";
-	trinket2_name = "none";
+	trinket1_name = "vial_of_convulsive_shadows";
+	trinket1_value = 2033;
+	trinket2_name = "horn_of_screaming_spirits";
+	trinket2_value = 2652;
 
 	report_path = &std::cout;
 	calculate_scale_factors = 0;
@@ -931,42 +934,23 @@ void parameters_consistency(){
 	}
 }
 
-int main(int argc, char** argv){
-	std::cout << "IreCore " << STRFILEVER << " " << __DATE__ << "\n" << std::endl;
+void irecore_initialize(){
 	set_default_parameters();
-	std::vector<kvpair_t> arglist;
-	build_arglist(arglist, argc, argv);
-	parse_parameters(arglist);
 	parameters_consistency();
 	generate_predef();
 
-	if (developer_debug){
-		std::cout << predef << std::endl;
-		host_kernel_entry();
-	}
-	else if(list_available_devices){
-		ocl().init();
-	}
-	else{
-		ocl().run(apl, predef);
-	}
+	ocl().init();
+}
 
-	if (calculate_scale_factors){
-		*report_path << "Scale factors:" << std::endl;
-		const char* stat_name[] = {
-			0, "str", "crit", "haste", "mastery", "mult", "vers",
-		};
-		float sf, sfe;
-		for (int i = 1; i < stat_array.size(); i++){
-			sf = stat_array[i].dps - stat_array[0].dps;
-			sf /= 120.0;
-			sfe = stat_array[i].dpse * stat_array[i].dpse + stat_array[0].dpse * stat_array[0].dpse;
-			sfe = sqrt(sfe) / 120.0;
-			*report_path << stat_name[i] << " " << sf << ", error " << sfe << std::endl;
-		}
+void irecore_hash(std::string& apl, float* result){
+	iterations = 8;
+	seed = 4262;
+	ocl().run(apl, predef, result);
+}
 
-	}
-
-	report_path->flush();
-	return 0;
+void irecore_run(std::string& apl, float& dps, float& error){
+	iterations = 10000;
+	seed = 0;
+	dps = ocl().run(apl, predef, 0);
+	error = stat_array[0].dpse;
 }

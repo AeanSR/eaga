@@ -6,6 +6,7 @@
 #include <intrin.h>
 #include <stdint.h>
 #include <algorithm>
+#include "irecore.h"
 
 #ifdef __APPLE__
 #include <OpenCL/opencl.h>
@@ -13,48 +14,7 @@
 #include <CL/cl.h>
 #endif
 
-class ocl_t{
-private:
-    cl_mem cl_res;
-    cl_context context;
-    cl_command_queue queue;
-    const int iterations = 50000;
-public:
-    int init();
-    float run(std::string& apl_cstr);
-    int free();
-    ocl_t(){
-        init();
-    }
-    ~ocl_t(){
-        free();
-    }
-};
-
-ocl_t& ocl();
-
-template <typename T>
-T prefix_mean(const T* _data, size_t n) {
-    /* Make a copy of _data. */
-    std::vector<T> data(_data, _data + n);
-
-    /* Prefix-sum to minimize rounding errors for FP types. */
-    for (size_t k = 1; k < data.size(); k += k) {
-        for (size_t i = 0; i < data.size(); i += k) {
-            auto j = i + k;
-            if (j < data.size()) {
-                data[i] += data[j];
-                i = j;
-            }
-            else {
-                break;
-            }
-        }
-    }
-
-    return data[0] / static_cast<T>(n);
-}
-
+std::mt19937& rng();
 double uni_rng();
 double nor_rng();
 
@@ -191,6 +151,15 @@ public:
     }
 };
 
-uint32_t strhash(const char* str, __m128i& fullhash);
-int checktt(__m128i& longhash, uint32_t shorthash);
-void recordtt(__m128i& longhash, uint32_t shorthash);
+
+typedef struct {
+    apl_t* apl;
+    float dps;
+	float dpse;
+	float fitness;
+	float fitness_error;
+	int iterations;
+    int complexity;
+}lelem_t;
+
+bool hash_apl(lelem_t& elem);

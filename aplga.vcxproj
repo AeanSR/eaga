@@ -86,13 +86,15 @@
   <ItemGroup>
     <ClCompile Include="cond.cpp" />
     <ClCompile Include="ga.cpp" />
-    <ClCompile Include="ocli.cpp" />
+    <ClCompile Include="irecore.cpp" />
+    <ClCompile Include="ocldriver.cpp" />
     <ClCompile Include="rng.cpp" />
     <ClCompile Include="transpose.cpp" />
     <ClCompile Include="action.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="aplga.h" />
+    <ClInclude Include="irecore.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
