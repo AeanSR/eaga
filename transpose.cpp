@@ -79,7 +79,7 @@ hashdict_t& dict(){
 	return _dict;
 }
 
-unsigned char transpose[1ULL << 32] = {0};
+unsigned char transpose[1U << 30] = {0};
 
 bool hash_apl(lelem_t& elem){
 	float result[8];
@@ -103,15 +103,44 @@ bool hash_apl(lelem_t& elem){
 	for (int i = 0; i < 32; i++){
 		elemhash ^= dict().r[i][p[i]];
 	}
-	unsigned char* tt = &transpose[elemhash];
-	bool ret;
-	if (*tt){
-		equal_apls++;
-		if (elem.apl->complexity() < *tt){
-			ret = true;
-			*tt = elem.apl->complexity();
+	union{
+		unsigned char ch;
+		struct{
+			unsigned hi : 4;
+			unsigned lo : 4;
+		} half;
+	}tt;
+	p = &transpose[(0x7fffffff & elemhash) >> 1];
+	tt.ch = *p;
+
+	if (elemhash & 1){
+		if (tt.half.hi){
+			equal_apls++;
+			if (elem.apl->complexity() < tt.half.hi){
+				tt.half.hi = elem.apl->complexity();
+				*p = tt.ch;
+			}
+			else return false;
 		}
-		else ret = false;
+		else{
+			tt.half.hi = elem.apl->complexity();
+			*p = tt.ch;
+		}
+		
 	}
-	return ret;
+	else{
+		if (tt.half.lo){
+			equal_apls++;
+			if (elem.apl->complexity() < tt.half.lo){
+				tt.half.lo = elem.apl->complexity();
+				*p = tt.ch;
+			}
+			else return false;
+		}
+		else{
+			tt.half.lo = elem.apl->complexity();
+			*p = tt.ch;
+		}
+	}
+	return true;
 }
