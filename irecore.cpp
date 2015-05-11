@@ -122,7 +122,7 @@ void set_default_parameters(){
 	ocl().opencl_device_id = 1;
 	stat = {
 		"",
-		0,
+		4313, 2148, 751, 1504, 478, 0
 	};
 	stat_not_pushed = 1;
 	raidbuff = {
@@ -945,12 +945,13 @@ void irecore_initialize(){
 void irecore_hash(std::string& apl, float* result){
 	iterations = 8;
 	seed = 4262;
-	ocl().run(apl, predef, result);
+	ocl().run(apl, predef, result, 0);
 }
 
-void irecore_run(std::string& apl, float& dps, float& error){
+void irecore_run(std::string& apl, float& dps, float& error, cl_program reuse){
 	iterations = 10000;
 	seed = 0;
-	dps = ocl().run(apl, predef, 0);
+	ocl().run(apl, predef, 0, reuse);
+	dps = stat_array[0].dps;
 	error = stat_array[0].dpse;
 }

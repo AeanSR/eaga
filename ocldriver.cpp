@@ -152,72 +152,77 @@ int ocl_t::init()
 	return 0;
 }
 
-float ocl_t::run(std::string& apl_cstr, std::string& predef, float* result){
+float ocl_t::run(std::string& apl_cstr, std::string& predef, float* result, cl_program reuse){
 	if (!initialized) init();
 	if (list_available_devices) return -1.0f;
 
 	cl_int err;
 	auto t1 = std::chrono::high_resolution_clock::now();
 
-    std::cout << "JIT ...\n";
+	if (!reuse){
+		std::cout << "JIT ...\n";
 
-	std::string source(predef);
-	source.append(ocl_src_char);
-    source.append("void scan_apl( rtinfo_t* rti ) {");
-    source.append(apl_cstr);
-    source.append("}");
-    const char* cptr = source.c_str();
+		std::string source(predef);
+		source.append(ocl_src_char);
+		source.append("void scan_apl( rtinfo_t* rti ) {");
+		source.append(apl_cstr);
+		source.append("}");
+		const char* cptr = source.c_str();
 
-    cl_program program = clCreateProgramWithSource(context, 1, &cptr, 0, 0);
-    if (program == 0) {
-        return -1.0;
-    }
+		program = clCreateProgramWithSource(context, 1, &cptr, 0, 0);
+		if (program == 0) {
+			return -1.0;
+		}
 
-	if ((err = clBuildProgram(program, 0, 0, "-cl-single-precision-constant -cl-denorms-are-zero -cl-fast-relaxed-math", 0, 0)) != CL_SUCCESS) {
-		std::cerr << "Can't build program\n";
-		size_t len;
-		char buffer[204800];
-		cl_build_status bldstatus;
-		printf("\nError %d: Failed to build program executable\n", err);
-		err = clGetProgramBuildInfo(program, device_used, CL_PROGRAM_BUILD_STATUS, sizeof(bldstatus), (void *)&bldstatus, &len);
-		if (err != CL_SUCCESS)
-		{
-			printf("Build Status error %d\n", err);
+		if ((err = clBuildProgram(program, 0, 0, "-cl-single-precision-constant -cl-denorms-are-zero -cl-fast-relaxed-math", 0, 0)) != CL_SUCCESS) {
+			std::cerr << "Can't build program\n";
+			size_t len;
+			char buffer[204800];
+			cl_build_status bldstatus;
+			printf("\nError %d: Failed to build program executable\n", err);
+			err = clGetProgramBuildInfo(program, device_used, CL_PROGRAM_BUILD_STATUS, sizeof(bldstatus), (void *)&bldstatus, &len);
+			if (err != CL_SUCCESS)
+			{
+				printf("Build Status error %d\n", err);
+				exit(1);
+			}
+			if (bldstatus == CL_BUILD_SUCCESS) printf("Build Status: CL_BUILD_SUCCESS\n");
+			if (bldstatus == CL_BUILD_NONE) printf("Build Status: CL_BUILD_NONE\n");
+			if (bldstatus == CL_BUILD_ERROR) printf("Build Status: CL_BUILD_ERROR\n");
+			if (bldstatus == CL_BUILD_IN_PROGRESS) printf("Build Status: CL_BUILD_IN_PROGRESS\n");
+			err = clGetProgramBuildInfo(program, device_used, CL_PROGRAM_BUILD_OPTIONS, sizeof(buffer), buffer, &len);
+			if (err != CL_SUCCESS)
+			{
+				printf("Build Options error %d\n", err);
+				exit(1);
+			}
+			printf("Build Options: %s\n", buffer);
+			err = clGetProgramBuildInfo(program, device_used, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
+			if (err != CL_SUCCESS)
+			{
+				printf("Build Log error %d\n", err);
+				exit(1);
+			}
+			printf("Build Log:\n%s\n", buffer);
 			exit(1);
+			return -1.0;
 		}
-		if (bldstatus == CL_BUILD_SUCCESS) printf("Build Status: CL_BUILD_SUCCESS\n");
-		if (bldstatus == CL_BUILD_NONE) printf("Build Status: CL_BUILD_NONE\n");
-		if (bldstatus == CL_BUILD_ERROR) printf("Build Status: CL_BUILD_ERROR\n");
-		if (bldstatus == CL_BUILD_IN_PROGRESS) printf("Build Status: CL_BUILD_IN_PROGRESS\n");
-		err = clGetProgramBuildInfo(program, device_used, CL_PROGRAM_BUILD_OPTIONS, sizeof(buffer), buffer, &len);
-		if (err != CL_SUCCESS)
-		{
-			printf("Build Options error %d\n", err);
-			exit(1);
+		if (program == 0) {
+			std::cerr << "Can't load or build program\n";
+			return -1.0;
 		}
-		printf("Build Options: %s\n", buffer);
-		err = clGetProgramBuildInfo(program, device_used, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
-		if (err != CL_SUCCESS)
-		{
-			printf("Build Log error %d\n", err);
-			exit(1);
-		}
-		printf("Build Log:\n%s\n", buffer);
-		exit(1);
+		
+	}
+	else{
+		program = reuse;
+	}
+
+	cl_kernel sim_iterate = clCreateKernel(program, "sim_iterate", 0);
+	if (sim_iterate == 0) {
+		std::cerr << "Can't load kernel\n";
+		clReleaseProgram(program);
 		return -1.0;
 	}
-    if (program == 0) {
-        std::cerr << "Can't load or build program\n";
-        return -1.0;
-    }
-
-    cl_kernel sim_iterate = clCreateKernel(program, "sim_iterate", 0);
-    if (sim_iterate == 0) {
-        std::cerr << "Can't load kernel\n";
-        clReleaseProgram(program);
-        return -1.0;
-    }
-
 	float* res = new float[iterations];
 	auto t2 = std::chrono::high_resolution_clock::now();
 
@@ -264,9 +269,7 @@ float ocl_t::run(std::string& apl_cstr, std::string& predef, float* result){
 		*report_path << "DPS Error(95% conf.) " << (thisstat->dpse = 2.0 * dev / sqrt(iterations)) << std::endl;
 	}
     delete[] res;
-    clReleaseKernel(sim_iterate);
-    clReleaseProgram(program);
-
+	clReleaseKernel(sim_iterate);
 	
 	auto t3 = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> time_span1 = std::chrono::duration_cast<std::chrono::duration<double>>(t3 - t1);

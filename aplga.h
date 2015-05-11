@@ -160,6 +160,10 @@ typedef struct {
 	float fitness_error;
 	int iterations;
     int complexity;
+	cl_program saved_kernel;
 }lelem_t;
 
 bool hash_apl(lelem_t& elem);
+
+extern int equal_apls;
+extern int repeated_apls;

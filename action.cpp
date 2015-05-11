@@ -83,7 +83,7 @@ void apl_t::mutation(){
     if (uni_rng() < 0.3){
         /* alternate */
         if (head) head->alternate();
-    }else if (c > 3.0 + 4.0 * abs(nor_rng())){
+    }else if (uni_rng() < 0.5){
         /* delete */
         if (!head) return;
         if (!head->next || uni_rng() < 0.22){

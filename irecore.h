@@ -58,9 +58,10 @@ private:
 	cl_device_id device_used;
 	int initialized;
 public:
+	cl_program program;
 	int opencl_device_id;
     int init();
-    float run(std::string& apl_cstr, std::string& predef, float* result);
+    float run(std::string& apl_cstr, std::string& predef, float* result, cl_program reuse);
     int free();
     ocl_t() : initialized(0){
     } 
@@ -75,4 +76,4 @@ ocl_t& ocl();
 
 void irecore_initialize();
 void irecore_hash(std::string& apl, float* result);
-void irecore_run(std::string& apl, float& dps, float& error);
+void irecore_run(std::string& apl, float& dps, float& error, cl_program reuse);

@@ -15,7 +15,7 @@ void eval(int idx){
 
     float dps;
 	float error;
-    irecore_run(str, dps, error);
+    irecore_run(str, dps, error, list[idx].saved_kernel);
     if (dps < .0) abort();
 	list[idx].dps = (list[idx].dps * list[idx].iterations + dps * 10000) / (list[idx].iterations + 10000);
 	error = error * error * 10000 * 10000;
@@ -64,7 +64,6 @@ void fitness_sort(int first, int last){
     }
 }
 
-
 int main(){
     int i;
     unsigned int gen = 0;
@@ -80,7 +79,7 @@ int main(){
         eval(i);
         while (list[i].dps <= .0){
             list[i].apl->mutation();
-            eval(i);
+			eval(i);
         }
     }
     while (1){
@@ -150,15 +149,18 @@ int main(){
 			list[i].iterations = 0;
             delete list[i].apl;
             list[i].apl = nullptr;
+			if (list[i].saved_kernel)
+				clReleaseProgram(list[i].saved_kernel);
+			list[i].saved_kernel = 0;
         }
         /* record */
         gen++;
         std::string str;
         list[0].apl->print(str);
         rewind(fbest);
-        fprintf(fbest, "DPS %.3f, APL:\n%s\n\n**********\n", list[0].dps, str.c_str());
-        printf("Gen %d, Max %.3f, Min %.3f. Best APL:\n%s\n", gen, list[0].dps, list[99].dps, str.c_str());
-        fprintf(fdata, "%d, %.3f, %.3f\n", gen, list[0].dps, list[99].dps);
+        fprintf(fbest, "REPEAT: %d, EQ: %d\r\nDPS %.3f, APL:\r\n%s\r\n\r\n**********\r\n", repeated_apls, equal_apls, list[0].dps, str.c_str());
+        printf("Gen %d, Max %.3f, Min %.3f. Best APL:\r\n%s\r\n", gen, list[0].dps, list[199].dps, str.c_str());
+        fprintf(fdata, "%d, %.3f, %.3f\n", gen, list[0].dps, list[199].dps);
         fflush(fbest);
         fflush(fdata);
     }

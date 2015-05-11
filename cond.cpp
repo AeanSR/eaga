@@ -20,19 +20,17 @@ void condnode_t::cascade_destruction(){
 };
 const char* condstr[] = {
     "power_check(rti,110)",
+    "power_check(rti,100)",
     "power_check(rti,90)",
+    "power_check(rti,80)",
     "power_check(rti,60)",
-    "power_check(rti,50)",
     "power_check(rti,40)",
-    "power_check(rti,30)",
     "power_check(rti,20)",
     "REMAIN(gcd)>=FROM_MILLISECONDS(200)",
     "REMAIN(gcd)>=FROM_MILLISECONDS(400)",
     "REMAIN(gcd)>=FROM_MILLISECONDS(800)",
     "REMAIN(gcd)>=FROM_MILLISECONDS(1000)",
     "REMAIN(gcd)>=FROM_MILLISECONDS(1200)",
-    "REMAIN(bloodthirst.cd)>=FROM_SECONDS(4)",
-    "REMAIN(bloodthirst.cd)>=FROM_SECONDS(3.5)",
     "REMAIN(bloodthirst.cd)>=FROM_SECONDS(3)",
     "REMAIN(bloodthirst.cd)>=FROM_SECONDS(2.5)",
     "REMAIN(bloodthirst.cd)>=FROM_SECONDS(2)",
@@ -54,7 +52,7 @@ const char* condstr[] = {
     "rti->player.bloodsurge.stack>=1",
     "rti->player.bloodsurge.stack<=1",
     "rti->player.bloodsurge.stack==0",
-    "UP(sudden_death.expire)",
+    "UP(suddendeath.expire)",
     "enemy_health_percent(rti)<=5.0f",
     "enemy_health_percent(rti)<20.0f",
     "enemy_health_percent(rti)>=20.0f",
@@ -225,7 +223,7 @@ void cond_t::mutation(){
     if (uni_rng() < 0.33){
         /* alternate */
         if (root) root->alternate();
-    }else if (c > 4.0 * abs(nor_rng())){
+    }else if (uni_rng() < 0.5){
         /* delete */
         if (!root) return;
         if (c <= 1.0){
