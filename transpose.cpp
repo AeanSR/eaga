@@ -79,7 +79,7 @@ hashdict_t& dict(){
 	return _dict;
 }
 
-unsigned transpose[1 << 27] = {0};
+unsigned char transpose[1ULL << 32] = {0};
 
 bool hash_apl(lelem_t& elem){
 	float result[8];
@@ -103,11 +103,15 @@ bool hash_apl(lelem_t& elem){
 	for (int i = 0; i < 32; i++){
 		elemhash ^= dict().r[i][p[i]];
 	}
-	unsigned* tt = &transpose[elemhash >> 5];
-	if (*tt & (1 << (elemhash & 31))){
+	unsigned char* tt = &transpose[elemhash];
+	bool ret;
+	if (*tt){
 		equal_apls++;
-		return false;
+		if (elem.apl->complexity() < *tt){
+			ret = true;
+			*tt = elem.apl->complexity();
+		}
+		else ret = false;
 	}
-	*tt |= (1 << (elemhash & 31));
-	return true;
+	return ret;
 }
